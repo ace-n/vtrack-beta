@@ -1,0 +1,11 @@
+C:\Users\Ace\My Code\VB.NET\Customizations\VisualHeadTracker\VisualHeadTracker\bin\Debug\VisualHeadTracker.exe
+C:\Users\Ace\My Code\VB.NET\Customizations\VisualHeadTracker\VisualHeadTracker\bin\Debug\VisualHeadTracker.pdb
+C:\Users\Ace\My Code\VB.NET\Customizations\VisualHeadTracker\VisualHeadTracker\bin\Debug\VisualHeadTracker.xml
+C:\Users\Ace\My Code\VB.NET\Customizations\VisualHeadTracker\VisualHeadTracker\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\Ace\My Code\VB.NET\Customizations\VisualHeadTracker\VisualHeadTracker\obj\x86\Debug\VisualHeadTracker.Resources.resources
+C:\Users\Ace\My Code\VB.NET\Customizations\VisualHeadTracker\VisualHeadTracker\obj\x86\Debug\GenerateResource.read.1.tlog
+C:\Users\Ace\My Code\VB.NET\Customizations\VisualHeadTracker\VisualHeadTracker\obj\x86\Debug\GenerateResource.write.1.tlog
+C:\Users\Ace\My Code\VB.NET\Customizations\VisualHeadTracker\VisualHeadTracker\obj\x86\Debug\VisualHeadTracker.exe
+C:\Users\Ace\My Code\VB.NET\Customizations\VisualHeadTracker\VisualHeadTracker\obj\x86\Debug\VisualHeadTracker.xml
+C:\Users\Ace\My Code\VB.NET\Customizations\VisualHeadTracker\VisualHeadTracker\obj\x86\Debug\VisualHeadTracker.pdb
+C:\Users\Ace\My Code\VB.NET\Customizations\VisualHeadTracker\VisualHeadTracker\obj\x86\Debug\VisualHeadTracker.pbx2.resources
