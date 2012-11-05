@@ -38,7 +38,9 @@ Public Class pbx2
 
     End Sub
 
-    Dim PastMousePtList As New List(Of Point)
+    Dim PastMouseXList As New AveragingObject(New List(Of Integer), 20)
+    Dim PastMouseYList As New AveragingObject(New List(Of Integer), 20)
+
     Dim ImgBytes As Byte()
     Dim LipAvg As New Point
     Dim IsCalibrated As Boolean = False
@@ -79,42 +81,22 @@ Public Class pbx2
         'Next
 
         ' Average the XYAvg with the past XYAvg's to reduce random error
-        Dim PastPtCount As Integer = 30
-        PastMousePtList.Add(XYAvg)
-        If PastMousePtList.Count >= 3 Then
+        XTotal = XTotal - FaceRect.Left
+        YTotal = YTotal - FaceRect.Top
 
-            ' Remove final point of PastMousePtList (PMPtList is a first-in last-out setup)
-            While PastMousePtList.Count > PastPtCount
-                PastMousePtList.RemoveAt(PastMousePtList.Count - 1)
-            End While
+        PastMouseXList.Update(XYAvg.X)
+        PastMouseYList.Update(XYAvg.Y)
 
-            ' Use historical data
-            XTotal = 0
-            YTotal = 0
-            For Each P As Point In PastMousePtList
-                XTotal += P.X
-                YTotal += P.Y
-            Next
-
-            XTotal = XTotal / PastMousePtList.Count
-            YTotal = YTotal / PastMousePtList.Count
-
-        Else
-
-            ' No historical data available, so use current data
-            XTotal = XYAvg.X
-            YTotal = XYAvg.Y
-
-        End If
+        ' No historical data available, so use current data
+        XTotal = PastMouseXList.GetAverage
+        YTotal = PastMouseYList.GetAverage
 
         ' Skew X/Y totals to the calibration rectangle
-        If False And IsCalibrated Then ' Calibration is broken
-            XTotal = ((XTotal - CalibRect.Left) / Math.Abs(CalibRect.Width)) * Screen.PrimaryScreen.Bounds.Width
-            YTotal = YTotal - CalibRect.Top
-        Else
-            XTotal = (XTotal - FaceRect.Left) ' / FaceRect.Width * Screen.PrimaryScreen.Bounds.Width
-            YTotal = YTotal - FaceRect.Top
-        End If
+        'If False And IsCalibrated Then ' Calibration is broken
+        '    XTotal = ((XTotal - CalibRect.Left) / Math.Abs(CalibRect.Width)) * Screen.PrimaryScreen.Bounds.Width
+        '    YTotal = YTotal - CalibRect.Top
+        'Else
+
 
         ' Update lip average
         LipAvg = New Point(XTotal, YTotal)
@@ -147,8 +129,8 @@ Public Class pbx2
         ' Draw facial rectangle
         faceRectShape.Location = New Point(FaceRect.Location.X, faceRectShape.Location.Y)
         faceRectShape.Size = New Size(FaceRect.Size.Width, faceRectShape.Size.Height)
-        xLine.X1 = XTotal + FaceRect.Location.X
-        xLine.X2 = XTotal + FaceRect.Location.X
+        xLine.X1 = XTotal ' + FaceRect.Left + CInt(FaceRect.Size.Width / 2)
+        xLine.X2 = xLine.X1
 
         ' Update picture box
         'pbox2.Image = Bmp
@@ -158,7 +140,6 @@ Public Class pbx2
     ' Find facial rectangle
     Public Function FindFacialRect(ByRef ImgBytes As Byte()) As Rectangle
 
-        Dim Threshold As Integer = 60
         Dim FaceRect As New Rectangle(New Point, cPnl.Size)
 
         ' Get left
@@ -173,7 +154,7 @@ Public Class pbx2
     End Function
     Public Function FFRGetEdge(ByRef ImgBytes As Byte(), ByVal Start As Integer, ByVal EndN As Integer, ByVal StepSize As Integer) As Integer
 
-        Dim Threshold As Integer = 115 ' # of valid pixels that must occur in a line for it to be marked
+        Dim Threshold As Integer = (cPnl.Height / StepSize) * 1.5 ' # of valid pixels that must occur in a line for it to be marked
 
         For x = Start To EndN Step Math.Sign(EndN - Start) * StepSize
 
@@ -184,16 +165,16 @@ Public Class pbx2
                 Dim HSV As Integer() = RGB2HSV(GetPixel(ImgBytes, x, y))
 
                 ' Detect face
-                If ((HSV.GetValue(0) > 10 AndAlso HSV.GetValue(0) < 30) OrElse HSV.GetValue(0) > 330) AndAlso HSV.GetValue(1) > 25 AndAlso HSV.GetValue(2) > 30 Then
-                    CurrentValidPxls += 1
-                End If
-
-                ' If face detected, report it as such
-                If CurrentValidPxls > Threshold Then
-                    Return x
+                If IsFace(HSV) Then
+                    CurrentValidPxls += Math.Max(20 - HSV.GetValue(0), 1)
                 End If
 
             Next
+
+            ' If face detected, report it as such
+            If CurrentValidPxls > Threshold Then
+                Return x
+            End If
 
         Next
 
@@ -224,7 +205,7 @@ Public Class pbx2
 
                 ' Include valid points in the average
                 'If ((HSV.GetValue(0) > 10 AndAlso HSV.GetValue(0) < 30) OrElse HSV.GetValue(0) > 330) AndAlso HSV.GetValue(1) > 25 AndAlso HSV.GetValue(2) > 30 Then
-                If (HSV.GetValue(0) > 355) AndAlso HSV.GetValue(1) > 50 AndAlso HSV.GetValue(2) > 50 Then ' Lips
+                If IsLips(HSV) Then ' Lips
 
                     'SetPixel(ImgBytes, x, y, 0, 255, 0)
 
@@ -248,6 +229,16 @@ Public Class pbx2
         ' Return
         Return New Point(XTotal, YTotal)
 
+    End Function
+
+    ' Pixel classification methods
+    Public Function IsLips(ByRef HSV As Integer()) As Boolean
+        Return (HSV.GetValue(0) > 355) AndAlso HSV.GetValue(1) > 50 AndAlso HSV.GetValue(2) > 50
+    End Function
+    Public Function IsFace(ByRef HSV As Integer()) As Boolean
+        Return ((HSV.GetValue(0) > 5 AndAlso HSV.GetValue(0) < 25) OrElse HSV.GetValue(0) > 330) _
+            AndAlso (HSV.GetValue(1) > 35 AndAlso HSV.GetValue(1) < 80) _
+            AndAlso (HSV.GetValue(2) > 30 AndAlso HSV.GetValue(2) < 70)
     End Function
 
     ' Get-set pixel
@@ -384,25 +375,62 @@ Public Class pbx2
 
 End Class
 
-Public Class RecursiveBlobDect
+Public Class AveragingObject
 
-    Public Sub RecursionHandler(ByRef BinaryImg As Boolean()(), ByVal Start As Point)
+    ' Properties
+    Private Shared P_Data As List(Of Integer)
+    Private Shared P_ConsideredDataCnt As Integer ' # of datapoints to average
 
-        ' Set up recursion
+    ' Property handlers
+    Public Property Data As List(Of Integer)
+        Get
+            Return P_Data
+        End Get
+        Set(ByVal value As List(Of Integer))
 
+            ' Do a deep copy
+            P_Data.Clear()
+            P_Data.AddRange(value)
 
-        ' Start recursing
-        'Recursor()
+        End Set
+    End Property
+    Public Property ConsideredDataCount As Integer
+        Get
+            Return P_ConsideredDataCnt
+        End Get
+        Set(ByVal value As Integer)
+            P_ConsideredDataCnt = value
+        End Set
+    End Property
 
+    ' Constructor
+    Public Sub New(ByVal Data As List(Of Integer), ByVal ConsideredDataCnt As Integer)
+        P_Data = Data
+        P_ConsideredDataCnt = Math.Max(ConsideredDataCnt, 1) ' At least 1 data point must be considered (so that the update function doesn't screw up; this works even if there are no data points)
     End Sub
 
-    Public Sub Recursor(ByVal Pt As Point, ByVal VertDir As Integer)
+    ' Methods
+    Public Sub Update(ByVal NewValue As Integer)
 
+        ' This makes the data list a LIFO (first in, last out) structure
 
-        ' Recurse into nearby points
+        ' Trim data list
+        While P_Data.Count > P_ConsideredDataCnt - 1
+            P_Data.RemoveAt(0)
+        End While
 
+        ' Add new value to data list
+        P_Data.Add(NewValue)
 
     End Sub
+    Public Function GetAverage() As Double
 
+        Dim Total As Integer = 0
+        For Each I As Integer In P_Data
+            Total += I
+        Next
+        Return Total / Math.Max(P_Data.Count, 1) ' Prevents a division by 0 error
+
+    End Function
 
 End Class
