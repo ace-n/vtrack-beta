@@ -1,0 +1,1 @@
+This is a bunch of pre-alpha code for a computer vision project of mine. This is probably utterly useless to you.
